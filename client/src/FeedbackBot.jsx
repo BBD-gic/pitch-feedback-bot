@@ -34,7 +34,7 @@ export default function FeedbackBot() {
             const effectiveTeamId = teamId || null;
             const effectiveSessionId = sessionId; // Always use generated session ID
             console.log("Sending request to server with teamId:", effectiveTeamId, "sessionId:", effectiveSessionId);
-            const res = await fetch("http://localhost:4000/next-question", {
+            const res = await fetch("https://pitch-feedback-bot.onrender.com/next-question", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ answers, teamId: effectiveTeamId, sessionId: effectiveSessionId })
