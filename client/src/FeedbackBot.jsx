@@ -36,7 +36,10 @@ export default function FeedbackBot() {
             console.log("Sending request to server with teamId:", effectiveTeamId, "sessionId:", effectiveSessionId);
             const res = await fetch("https://pitch-feedback-bot.onrender.com/next-question", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
                 body: JSON.stringify({ answers, teamId: effectiveTeamId, sessionId: effectiveSessionId })
             });
 
