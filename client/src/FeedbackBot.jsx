@@ -65,6 +65,11 @@ export default function FeedbackBot() {
             }
         } catch (err) {
             console.error("Error getting next question:", err);
+            console.error("Error details:", {
+                message: err.message,
+                stack: err.stack,
+                url: "https://pitch-feedback-bot.onrender.com/next-question"
+            });
             setChat((prev) => [...prev, { sender: "bot", text: "I'm having trouble connecting. Please try again in a moment." }]);
         } finally {
             setLoading(false);

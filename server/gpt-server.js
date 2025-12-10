@@ -6,7 +6,22 @@ import axios from "axios";
 dotenv.config();
 const app = express();
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://resonant-torte-2a67e5.netlify.app'],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'https://resonant-torte-2a67e5.netlify.app'
+    ];
+    
+    // Allow any netlify.app subdomain
+    if (origin.includes('.netlify.app') || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
 }));
 app.use(express.json());
