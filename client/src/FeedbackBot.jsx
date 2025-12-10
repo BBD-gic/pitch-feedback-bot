@@ -107,6 +107,9 @@ export default function FeedbackBot() {
                         
                         // Convert markdown-style formatting to HTML
                         let formattedLine = line
+                            .replace(/###\s*(.*)/g, '<h4 style="margin: 8px 0; font-weight: bold; font-size: 1.1em;">$1</h4>') // H3
+                            .replace(/##\s*(.*)/g, '<h3 style="margin: 10px 0; font-weight: bold; font-size: 1.2em;">$1</h3>') // H2
+                            .replace(/#\s*(.*)/g, '<h2 style="margin: 12px 0; font-weight: bold; font-size: 1.3em;">$1</h2>') // H1
                             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
                             .replace(/\*(.*?)\*/g, '<em>$1</em>'); // Italics
                         
