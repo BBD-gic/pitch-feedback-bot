@@ -79,6 +79,46 @@ export default function FeedbackBot() {
 
     useEffect(scrollToBottom, [chat]);
 
+    const formatBotMessage = (text) => {
+        // Split by double line breaks first (paragraphs)
+        const paragraphs = text.split(/\n\n+/);
+        
+        return paragraphs.map((paragraph, pIndex) => {
+            // Within each paragraph, handle single line breaks
+            const lines = paragraph.split(/\n/);
+            
+            return (
+                <div key={pIndex} style={{ 
+                    marginBottom: pIndex < paragraphs.length - 1 ? '16px' : '0',
+                    lineHeight: '1.5'
+                }}>
+                    {lines.map((line, lIndex) => {
+                        // Check if line starts with bullet points, arrows, or emojis
+                        const isBulletPoint = /^[-•→⚠️🎯📝✅❌🔧🎉]/;
+                        const isListItem = isBulletPoint.test(line.trim());
+                        
+                        // Convert markdown-style formatting to HTML
+                        let formattedLine = line
+                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+                            .replace(/\*(.*?)\*/g, '<em>$1</em>'); // Italics
+                        
+                        return (
+                            <div 
+                                key={lIndex} 
+                                style={{ 
+                                    marginBottom: lIndex < lines.length - 1 ? '8px' : '0',
+                                    paddingLeft: isListItem ? '0px' : '0px',
+                                    display: 'block'
+                                }}
+                                dangerouslySetInnerHTML={{ __html: formattedLine }}
+                            />
+                        );
+                    })}
+                </div>
+            );
+        });
+    };
+
     const handleSend = () => {
         if (!input.trim() || loading) return;
         const userMessage = { sender: "user", text: input.trim() };
@@ -100,7 +140,7 @@ export default function FeedbackBot() {
             <div className={`chat-window ${showPopup ? "blurred" : ""}`}>
                 {chat.map((msg, idx) => (
                     <div key={idx} className={`chat-bubble ${msg.sender}`}>
-                        {msg.text}
+                        {msg.sender === 'bot' ? formatBotMessage(msg.text) : msg.text}
                     </div>
                 ))}
                 {loading && (

@@ -99,6 +99,8 @@ body {
   align-self: flex-start;
   background: rgba(255, 255, 255, 0.5);
   border-bottom-left-radius: 0px;
+  white-space: pre-wrap;
+  line-height: 1.5;
 }
 
 .chat-bubble.user {
