@@ -118,8 +118,7 @@ const saveConversationToAirtable = async (teamId, sessionId, answers, isComplete
     "fields": {
       "Team ID": teamId || "Anonymous",
       "Session ID": sessionId,
-      "Response Text": conversationText,
-      "Timestamp": new Date().toISOString()
+      "Conversation": conversationText
     }
   };
 
@@ -164,8 +163,7 @@ const getPreviousConversations = async (teamId, sessionId) => {
         "Authorization": `Bearer ${AIRTABLE_API_KEY}`
       },
       params: {
-        filterByFormula: filterFormula,
-        sort: [{ field: "Timestamp", direction: "asc" }]
+        filterByFormula: filterFormula
       }
     });
 
@@ -175,7 +173,7 @@ const getPreviousConversations = async (teamId, sessionId) => {
     // Parse conversations and extract Q&A pairs
     const allAnswers = [];
     conversations.forEach(record => {
-      const text = record.fields["Response Text"] || "";
+      const text = record.fields["Conversation"] || "";
       
       // Skip session markers and completion markers
       const cleanText = text
