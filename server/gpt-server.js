@@ -5,10 +5,7 @@ import axios from "axios";
 
 dotenv.config();
 const app = express();
-app.use(cors({
-  origin: ['http://localhost:3000', 'https://resonant-torte-2a67e5.netlify.app', 'https://pitch-feedback-bot.onrender.com'],
-  credentials: true
-}));
+app.use(cors());
 app.use(express.json());
 
 const SYSTEM_PROMPT = `
@@ -18,7 +15,7 @@ Your goal is to guide users through improving their pitch step-by-step, helping 
 
 🌟 **FIRST INTERACTION:**
 
-Always start with: "Hello! I'm here to help you craft an amazing pitch for your invention. I'd love to hear your current pitch - please share it with me word for word, exactly as you've been practicing it. Together, we'll make it clear, engaging, and impactful!"
+"Hello! I'm here to help you craft an amazing pitch for your invention. I'd love to hear your current pitch - please share it with me word for word, exactly as you've been practicing it. Together, we'll make it clear, engaging, and impactful!"
 
 🎯 **Key Areas for Pitch Improvement:**
 
@@ -77,20 +74,6 @@ const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY;
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
 const AIRTABLE_TABLE_NAME_ONE = process.env.AIRTABLE_TABLE_NAME_ONE;
 const airtableBaseURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${encodeURIComponent(AIRTABLE_TABLE_NAME_ONE)}`;
-
-// Health check endpoint
-app.get("/health", (req, res) => {
-  res.json({ 
-    status: "OK", 
-    timestamp: new Date().toISOString(),
-    env: {
-      openaiKey: !!process.env.OPENAI_API_KEY,
-      airtableKey: !!process.env.AIRTABLE_API_KEY,
-      airtableBase: !!process.env.AIRTABLE_BASE_ID,
-      airtableTable: !!process.env.AIRTABLE_TABLE_NAME_ONE
-    }
-  });
-});
 
 const saveConversationToAirtable = async (teamId, sessionId, answers, isComplete = false, sessionStart = false) => {
   if (!answers || answers.length === 0) return;
@@ -269,9 +252,9 @@ app.post("/next-question", async (req, res) => {
     console.log(`Sending ${conversationHistory.length} messages to GPT`);
 
     const response = await axios.post("https://api.openai.com/v1/chat/completions", {
-      model: "gpt-4o-mini",
+      model: "gpt-4-turbo-preview",
       messages: conversationHistory,
-      max_tokens: 800,
+      max_tokens: 500,
       temperature: 0.7
     }, {
       headers: {
