@@ -166,12 +166,33 @@ export default function FeedbackBot() {
 
             {inputVisible && (
                 <div className="chat-input">
-                    <input
-                        type="text"
+                    <textarea
                         placeholder="Type your reply..."
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                        rows={1}
+                        style={{
+                            resize: 'none',
+                            overflow: 'auto',
+                            minHeight: '44px',
+                            maxHeight: '120px',
+                            lineHeight: '20px',
+                            fontFamily: 'inherit',
+                            fontSize: 'inherit',
+                            border: 'inherit',
+                            borderRadius: '25px',
+                            padding: '12px 100px 12px 30px',
+                            width: '100%',
+                            outline: 'none',
+                            boxSizing: 'border-box',
+                            scrollbarWidth: 'none',
+                            msOverflowStyle: 'none'
+                        }}
+                        onInput={(e) => {
+                            e.target.style.height = 'auto';
+                            e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                        }}
                     />
                     <img
                         src="/send-button.png"

@@ -172,13 +172,18 @@ const getPreviousConversations = async (teamId, sessionId) => {
   if (!teamId && !sessionId) return [];
 
   try {
-    // Build filter formula - prioritize sessionId for exact match
+    // Build filter formula - prioritize teamId for conversation continuity
     let filterFormula = "";
-    if (sessionId) {
-      filterFormula = `{Session ID} = '${sessionId}'`;
-    } else if (teamId) {
-      // Only look for team conversations if no sessionId provided
-      filterFormula = `AND({Team ID} = '${teamId}', {Session ID} != '')`;
+    if (teamId && teamId.trim()) {
+      // Escape single quotes and validate teamId
+      const cleanTeamId = teamId.toString().replace(/'/g, "\\'");
+      filterFormula = `{Team ID} = '${cleanTeamId}'`;
+    } else if (sessionId && sessionId.trim()) {
+      // Fallback to sessionId if no teamId provided
+      const cleanSessionId = sessionId.toString().replace(/'/g, "\\'");
+      filterFormula = `{Session ID} = '${cleanSessionId}'`;
+    } else {
+      return [];
     }
 
     console.log("Fetching conversations with filter:", filterFormula);
@@ -197,8 +202,9 @@ const getPreviousConversations = async (teamId, sessionId) => {
 
     // Parse conversations and extract Q&A pairs
     const allAnswers = [];
-    conversations.forEach(record => {
+    conversations.forEach((record, index) => {
       const text = record.fields["Conversation"] || "";
+      console.log(`Processing conversation ${index + 1}:`, text.substring(0, 100) + "...");
       
       // Skip session markers and completion markers
       const cleanText = text
@@ -207,32 +213,31 @@ const getPreviousConversations = async (teamId, sessionId) => {
         .replace(/\[CONVERSATION IN PROGRESS\]/g, "")
         .trim();
 
-      // Extract Q&A pairs
-      const qaPairs = cleanText.split(/\n\nQ\d+:/).slice(1);
-      qaPairs.forEach(pair => {
-        const lines = pair.trim().split('\nA: ');
-        if (lines.length === 2) {
-          allAnswers.push({
-            question: lines[0].trim(),
-            answer: lines[1].trim()
-          });
-        }
-      });
+      console.log(`Cleaned text ${index + 1}:`, cleanText.substring(0, 100) + "...");
 
-      // Handle first Q&A if it doesn't start with Q1:
-      if (cleanText.includes('A: ') && !cleanText.startsWith('Q1:')) {
-        const firstPair = cleanText.split('\n\nQ')[0];
-        const lines = firstPair.split('\nA: ');
-        if (lines.length === 2) {
-          // Only add if not already captured
-          const isDuplicate = allAnswers.some(existing => 
-            existing.question === lines[0].trim() && existing.answer === lines[1].trim()
-          );
-          if (!isDuplicate) {
-            allAnswers.unshift({
-              question: lines[0].trim(),
-              answer: lines[1].trim()
-            });
+      // Split by double newlines to get conversation blocks
+      const blocks = cleanText.split(/\n\n+/).filter(block => block.trim());
+      
+      for (const block of blocks) {
+        // Skip the initial greeting session starter
+        if (block.includes("Q1: Initial greeting") && block.includes("A: Session started")) {
+          continue;
+        }
+        
+        // Extract Q&A pairs from each block
+        if (block.includes("Q1:") && block.includes("A: ")) {
+          const lines = block.split('\nA: ');
+          if (lines.length === 2) {
+            const question = lines[0].replace(/^Q\d+:\s*/, '').replace(/^"/, '').replace(/"$/, '').trim();
+            const answer = lines[1].trim();
+            
+            // Skip empty or session starter entries
+            if (question && answer && answer !== "Session started" && question !== "Initial greeting") {
+              allAnswers.push({
+                question: question,
+                answer: answer
+              });
+            }
           }
         }
       }
@@ -270,21 +275,32 @@ app.post("/next-question", async (req, res) => {
     // Build conversation history for GPT
     let conversationHistory = [];
     
-    if (allAnswers.length === 0) {
-      // New conversation - just system prompt
-      conversationHistory.push({
-        role: "system",
-        content: SYSTEM_PROMPT
-      });
-    } else {
-      // Existing conversation - rebuild the full conversation
-      conversationHistory.push({
-        role: "system", 
-        content: SYSTEM_PROMPT
-      });
+    // Always start with system prompt
+    conversationHistory.push({
+      role: "system",
+      content: SYSTEM_PROMPT
+    });
 
-      // Add all previous Q&A pairs
-      allAnswers.forEach((pair, index) => {
+    // If this is a completely new conversation (no current answers), start fresh
+    if (answers.length === 0) {
+      // For context, add previous conversations as background knowledge but don't continue them
+      if (allAnswers.length > 0) {
+        conversationHistory.push({
+          role: "system",
+          content: `Background context: This user has had previous conversations about their pitch. Previous exchanges included: ${allAnswers.map(pair => `Q: "${pair.question}" A: "${pair.answer}"`).join('; ')}. However, start fresh with the initial greeting - don't continue from where they left off.`
+        });
+      }
+    } else {
+      // For ongoing conversation in current session, include context but start fresh conversation flow
+      if (allAnswers.length > 0) {
+        conversationHistory.push({
+          role: "system", 
+          content: `Background context: This user has had previous conversations about their pitch. Previous exchanges: ${allAnswers.map(pair => `Q: "${pair.question}" A: "${pair.answer}"`).join('; ')}. Use this context to inform your responses but treat this as a new conversation session.`
+        });
+      }
+
+      // Add only current session Q&A pairs to maintain conversation flow
+      answers.forEach((pair, index) => {
         conversationHistory.push({
           role: "assistant",
           content: pair.question
